@@ -4,18 +4,27 @@ import re
 import os
 from main.models import BlackList
 
-urls_reg = ['select', r'<script[\s>\/]']
-body_reg = [r'<svg\s', r'<img\s']
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
-def get_reg(stable):
-    list = BlackList.objects.values_list('reg', flat=True).filter(url=True, active=True, stable=stable)
-    return list
-
-
-def get_stable():
-    return list
+def get_blacklist(stable, location):
+    """
+    получение блэклиста
+    :param location: местонахождение данного выражения
+    :param stable: это просто поиск подстроки (True) или регулярное выражение (False)
+    :return:
+    """
+    blacklist = BlackList.objects.values_list('reg', flat=True).filter(active=True, stable=stable)
+    if location == 'url':
+        return blacklist.filter(url=True)
+    elif location == 'head':
+        return blacklist.filter(head=True)
+    elif location == 'args':
+        return blacklist.filter(args=True)
+    elif location == 'body':
+        return blacklist.filter(body=True)
+    else:
+        return blacklist
 
 
 def url_decode(url):
@@ -60,8 +69,8 @@ class Analysis:
 
     def __init__(self):
         self.setting = Setting()
-        self.reg_url = get_reg(stable=False)
-        self.stable_url = get_reg(stable=True)
+        self.reg_url = get_blacklist(stable=False, location='url')
+        self.stable_url = get_blacklist(stable=True, location='url')
 
     def check_query(self):
         clean_query = url_decode(self.request.query)
