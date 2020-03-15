@@ -16,3 +16,16 @@ class BlackList(models.Model):
     type = models.ForeignKey(AttackType, on_delete=models.CASCADE)
     stable = models.BooleanField(default=True)
     active = models.BooleanField(default=True)
+
+
+class Events(models.Model):
+    date = models.DateTimeField('date', auto_now=True)
+    type = models.ForeignKey(AttackType, on_delete=models.CASCADE)
+    reg = models.CharField(max_length=255)
+    url = models.CharField(max_length=255)
+    args = models.TextField()
+    head = models.TextField()
+    body = models.TextField()
+    cookie = models.TextField()
+    method = models.CharField(max_length=6)
+    ip = models.CharField(max_length=15)

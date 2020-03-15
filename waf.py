@@ -1,10 +1,9 @@
 import os
 import django
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waf.settings')
-django.setup()
 from tornado import web, ioloop
 import requests
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waf.settings')
+django.setup()
 from analysis import Analysis
 from setting import Setting
 

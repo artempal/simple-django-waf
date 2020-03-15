@@ -1,110 +1,94 @@
-from setting import Setting
-import urllib.parse
-import re
 import os
-from main.models import BlackList
+from main.models import BlackList, Events
+from block_ext import BlockExtension  # класс исключения
+import helpers
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
-def get_blacklist(stable, location):
-    """
-    получение блэклиста
-    :param location: местонахождение данного выражения
-    :param stable: это просто поиск подстроки (True) или регулярное выражение (False)
-    :return:
-    """
-    blacklist = BlackList.objects.values_list('reg', flat=True).filter(active=True, stable=stable)
-    if location == 'url':
-        return blacklist.filter(url=True)
-    elif location == 'head':
-        return blacklist.filter(head=True)
-    elif location == 'args':
-        return blacklist.filter(args=True)
-    elif location == 'body':
-        return blacklist.filter(body=True)
-    else:
-        return blacklist
-
-
-def url_decode(url):
-    """
-    декодирование url адреса
-    :param url: исходный адрес
-    :return:
-    """
-    return urllib.parse.unquote(url)
-
-
-def reg_search(reg_list, text):
-    """
-    поиск по регулярному выражению
-    :param reg_list: список регулярок
-    :param text: текст для поиска
-    :return:
-    """
-    for reg in reg_list:
-        result = re.search(reg, text)
-        if result is not None:
-            return reg
-    return 0
-
-
-def stable_search(stable_list, text):
-    """
-    поиск по стабильным вхождениям строки (без регулярных выражений)
-    :param stable_list: строка стабильных вхождений
-    :param text: текст для поиска
-    :return:
-    """
-    for stable in stable_list:
-        result = text.find(stable)
-        if result != -1:
-            return stable
-    return 0
-
-
 class Analysis:
     request = object  # запрос
+    text = {}  # пребразованные в текст данные из запроса
 
     def __init__(self):
-        self.setting = Setting()
-        self.reg_url = get_blacklist(stable=False, location='url')
-        self.stable_url = get_blacklist(stable=True, location='url')
+        self.blacklist = BlackList.objects.values_list('reg', flat=True).filter(active=True)  # получаем блэклист
 
-    def check_query(self):
-        clean_query = url_decode(self.request.query)
-        result = stable_search(self.stable_url, clean_query)  # сначала ищем стабильные вхождения
-        if result == 0:  # если ничего нет
-            result = reg_search(self.reg_url, clean_query)  # ищем вхождения по регулярным выражениям
-        if result != 0:  # если что-то найдено
-            print(result)
-            return 1
+    def get_blacklist(self, stable, location):
+        """
+        получение блэклиста
+        :param location: местонахождение данного выражения
+        :param stable: это просто поиск подстроки (True) или регулярное выражение (False)
+        :return:
+        """
+        if location == 'url':
+            return self.blacklist.filter(url=True, stable=stable)
+        elif location == 'head':
+            return self.blacklist.filter(head=True, stable=stable)
+        elif location == 'args':
+            return self.blacklist.filter(args=True, stable=stable)
+        elif location == 'body':
+            return self.blacklist.filter(body=True, stable=stable)
+        else:
+            return self.blacklist
+
+    def insert_event(self, reg):
+        """
+        вставка события блокировки в базу
+        :param reg: регулярное выражение (или строка), на котором произошла блокировка
+        :return:
+        """
+        event = Events()
+        event.url = self.request.path
+        event.args = self.text['args']
+        event.head = self.text['head']
+        event.method = self.request.method
+        event.body = self.text['body']
+        event.ip = self.request.remote_ip
+        event.type = BlackList.objects.get(reg=reg).type
+        event.cookie = self.request.cookies
+        event.reg = reg
+        event.save()
+
+    def check(self, location):
+        """
+        проверка по сигнатурам
+        :param location: локализация сигнатуры
+        :return: вернет 0, если ничего не найдено иначе выбросит исключение BlockExtension со строкой сигнатуры
+        """
+        try:
+            helpers.stable_search(self.get_blacklist(True, location), self.text[location])
+            helpers.reg_search(self.get_blacklist(False, location), self.text[location])
+        except BlockExtension as reg:
+            self.insert_event(reg)
+            print(reg)
+            raise BlockExtension(reg)
         return 0
 
-    def check_block(self):
-        # запрос в базу регулярок с блокировками по месту их дислокации
-
-        pass
-
     def process(self, req):
+        """
+        процесс анализа, запускаемый основной программой waf.py
+        :param req: класс request (tornado HTTPServerRequest)
+        :return: True - если нужно заблокировать, False - если блокировать не нужно
+        """
         self.request = req
+        self.text['args'] = helpers.args_to_text(self.request.arguments)
+        self.text['head'] = helpers.headers_to_text(self.request.headers)
+        self.text['url'] = helpers.url_decode(self.request.uri)
+        self.text['body'] = str(self.request.body, 'utf-8')
         '''
         print(self.request.path)
         print(self.request.headers)
-        print(self.request.body)
         print(self.request.cookies)
         print(self.request.arguments)
+        print(self.request.body)
         print(self.request.query)
         '''
-
-        # сначала проверяем все регулярки с блокировкой по порядку, при нахождении регулярки поиск заканчивается,
-        # событие вносится в базу, запрос блокируется если включена проверка на подозриетльные запросы, происходит
-        # поиск всех вхождений подозрительных и все они заносятся в базу
-        status = 0  # счетчик сработки правил блокировка
-        status += self.check_query()
-
-        if status > 0:  # если было обнаружено хотя бы одно событие, попадающее к политике блокировки
+        try:  # проверяем по порядку и ждем выброса исключения на любом этапе проверки
+            self.check('url')
+            self.check('args')
+            self.check('head')
+            self.check('body')
+        except BlockExtension:
             return True  # блокируем
         else:
             return False  # пропускаем
