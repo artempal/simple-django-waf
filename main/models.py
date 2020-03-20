@@ -9,10 +9,10 @@ class AttackType(models.Model):
 
 class BlackList(models.Model):
     reg = models.CharField(max_length=200)
-    head = models.BooleanField()
-    url = models.BooleanField()
-    args = models.BooleanField()
-    body = models.BooleanField()
+    head = models.BooleanField(default=False)
+    url = models.BooleanField(default=False)
+    args = models.BooleanField(default=False)
+    body = models.BooleanField(default=False)
     type = models.ForeignKey(AttackType, on_delete=models.CASCADE)
     stable = models.BooleanField(default=True)
     active = models.BooleanField(default=True)
@@ -22,6 +22,7 @@ class Events(models.Model):
     date = models.DateTimeField('date', auto_now=True)
     type = models.ForeignKey(AttackType, on_delete=models.CASCADE)
     reg = models.CharField(max_length=255)
+    location = models.CharField(max_length=25)
     url = models.CharField(max_length=255)
     args = models.TextField()
     head = models.TextField()

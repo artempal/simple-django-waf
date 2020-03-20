@@ -31,9 +31,10 @@ class Analysis:
         else:
             return self.blacklist
 
-    def insert_event(self, reg):
+    def insert_event(self, reg, location):
         """
         вставка события блокировки в базу
+        :param location:
         :param reg: регулярное выражение (или строка), на котором произошла блокировка
         :return:
         """
@@ -46,6 +47,7 @@ class Analysis:
         event.ip = self.request.remote_ip
         event.type = BlackList.objects.get(reg=reg).type
         event.cookie = self.request.cookies
+        event.location = location
         event.reg = reg
         event.save()
 
@@ -59,7 +61,7 @@ class Analysis:
             helpers.stable_search(self.get_blacklist(True, location), self.text[location])
             helpers.reg_search(self.get_blacklist(False, location), self.text[location])
         except BlockExtension as reg:
-            self.insert_event(reg)
+            self.insert_event(reg, location)
             print(reg)
             raise BlockExtension(reg)
         return 0
@@ -73,7 +75,7 @@ class Analysis:
         self.request = req
         self.text['args'] = helpers.args_to_text(self.request.arguments)
         self.text['head'] = helpers.headers_to_text(self.request.headers)
-        self.text['url'] = helpers.url_decode(self.request.uri)
+        self.text['url'] = self.request.path
         self.text['body'] = str(self.request.body, 'utf-8')
         '''
         print(self.request.path)

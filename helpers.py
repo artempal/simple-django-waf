@@ -64,6 +64,6 @@ def args_to_text(args):
         text += key + ": "
         for val in value:
             text += str(val, encoding) + " "
-        text += "; "
+        text += " "
     return text
 
