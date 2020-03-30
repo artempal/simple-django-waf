@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BlackList, AttackType, Events
+from .models import BlackList, AttackType, Events, Configs
 
 admin.site.site_header = "Artem WAF "
 admin.site.site_title = "Artem WAF"
@@ -15,9 +15,10 @@ class BlackListAdmin(admin.ModelAdmin):
     fields = [('reg', 'stable'), ('head', 'url', 'args', 'body'), 'active', 'type']
     search_fields = ['reg']
 
+
 @admin.register(Events)
 class EventsAdmin(admin.ModelAdmin):
-    list_display = ('url', 'method', 'reg', 'location', 'type', 'ip','date')
+    list_display = ('url', 'method', 'reg', 'location', 'type', 'ip', 'date')
 
     def has_add_permission(self, request):
         return False
@@ -28,6 +29,14 @@ class EventsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+
+@admin.register(Configs)
+class ConfigsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 #admin.site.register(AttackType)
-
-

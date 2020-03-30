@@ -5,8 +5,10 @@ import requests
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waf.settings')
 django.setup()
 from analysis import Analysis
-from setting import Setting
+from main.models import Configs
 
+ignore_headers = ('Content-Length', 'Transfer-Encoding', 'Content-Encoding', 'Connection', 'Pragma')
+configs = Configs.objects.get(pk=1)
 
 class MainHandler(web.RequestHandler):
     SUPPORTED_METHODS = ('GET', 'HEAD', 'POST')
@@ -24,14 +26,14 @@ class MainHandler(web.RequestHandler):
 
     def _go(self, type):
 
-        if self.analysis.process(self.request):  # если запрос должен быть заблокирован
+        if configs.signature_analysis and self.analysis.process(self.request):  # если запрос должен быть заблокирован
             self.set_status(403)  # ставим код ошибки
             return  # выходим
 
         if type == 'POST':
-            url = 'http://{}{}'.format(Setting.hostname, self.request.path)
+            url = 'http://{}{}'.format(configs.hostname, self.request.path)
         else:
-            url = 'http://{}{}?{}'.format(Setting.hostname, self.request.path, self.request.query)
+            url = 'http://{}{}?{}'.format(configs.hostname, self.request.path, self.request.query)
         print(url)
         m_headers = parse_headers(self.request.headers)
         try:
@@ -53,8 +55,20 @@ class MainHandler(web.RequestHandler):
 
         for header in r_headers:
             # print(header + " "+ r_headers[header])
-            if header not in Setting.ignore_headers:
+            if header not in ignore_headers:
                 self.set_header(header, r_headers[header])
+        if configs.hide_server:
+            self.set_header("Server", "Protected")
+        if configs.hide_x_powered_by:
+            self.set_header("X-Powered-By", "Protected")
+        if configs.x_frame_option:
+            self.set_header("X-FRAME-OPTIONS", "DENY")
+        if configs.xss_browser_protection:
+            self.set_header("X-XSS-Protection", "1; mode=block")
+        if configs.no_sniff:
+            self.set_header("X-Content-Type-Options", "nosniff")
+        if configs.content_security_policy_self:
+            self.set_header("Content-Security-Policy", "default-src 'self';")
         for cookie in cookies:
             self.set_cookie(cookie, cookies[cookie])
         self.write(response.content)
@@ -64,7 +78,7 @@ class MainHandler(web.RequestHandler):
 def parse_headers(headers):
     req_header = {}
     for (k, v) in sorted(headers.get_all()):
-        if k not in Setting.ignore_headers:
+        if k not in ignore_headers:
             # print('%s: %s' % (k, v))
             req_header[k] = v
     return req_header
@@ -78,7 +92,7 @@ def make_app():
 
 if __name__ == "__main__":
     app = make_app()
-    app.listen(Setting.port)
+    app.listen(configs.port)
     try:
         ioloop.IOLoop.current().start()
     except KeyboardInterrupt:

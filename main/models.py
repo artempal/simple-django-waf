@@ -51,3 +51,22 @@ class Events(models.Model):
 
     def __str__(self):
         return self.url
+
+
+class Configs(models.Model):
+    hostname = models.CharField(max_length=255, default="127.0.0.1:81")
+    port = models.IntegerField('порт', default=80)
+    x_frame_option = models.BooleanField('запрет встраивания в фреймы', default=True)
+    signature_analysis = models.BooleanField('сигнатурный анализ', default=True)
+    xss_browser_protection = models.BooleanField('встроенная защита браузера от XSS', default=False)
+    no_sniff = models.BooleanField('запрет угадывания content-type', default=True)
+    content_security_policy_self = models.BooleanField('строгая политика CSP', default=False)
+    hide_server = models.BooleanField('скрытие сервера', default=True)
+    hide_x_powered_by = models.BooleanField('скрытие ПО сервера', default=True)
+
+    class Meta:
+        verbose_name = 'настройка'
+        verbose_name_plural = 'Настройки'
+
+    def __str__(self):
+        return self.hostname
