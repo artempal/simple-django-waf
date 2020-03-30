@@ -10,6 +10,7 @@ admin.site.index_title = 'Администрирование WAF'
 # Register your models here.
 @admin.register(BlackList)
 class BlackListAdmin(admin.ModelAdmin):
+    icon_name = 'do_not_disturb_on'
     list_display = ('reg', 'type', 'head', 'url', 'body', 'args', 'active')
     list_filter = ('active', 'head', 'url', 'body', 'args', 'stable')
     fields = [('reg', 'stable'), ('head', 'url', 'args', 'body'), 'active', 'type']
@@ -19,6 +20,7 @@ class BlackListAdmin(admin.ModelAdmin):
 @admin.register(Events)
 class EventsAdmin(admin.ModelAdmin):
     list_display = ('url', 'method', 'reg', 'location', 'type', 'ip', 'date')
+    icon_name = 'error'
 
     def has_add_permission(self, request):
         return False
