@@ -1,7 +1,11 @@
 import os
+import ssl
+
 import django
 from tornado import web, ioloop
 import requests
+from tornado.httpserver import HTTPServer
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waf.settings')
 django.setup()
 from analysis import Analysis
@@ -69,6 +73,8 @@ class MainHandler(web.RequestHandler):
             self.set_header("X-Content-Type-Options", "nosniff")
         if configs.content_security_policy_self:
             self.set_header("Content-Security-Policy", "default-src 'self';")
+        if configs.https and configs.strict_transport_security:
+            self.set_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         for cookie in cookies:
             self.set_cookie(cookie, cookies[cookie])
         self.write(response.content)
@@ -92,7 +98,13 @@ def make_app():
 
 if __name__ == "__main__":
     app = make_app()
-    app.listen(configs.port)
+    if configs.https:
+        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_ctx.load_cert_chain(configs.cert_file, configs.key_file)
+        server = HTTPServer(app, ssl_options=ssl_ctx)
+        server.listen(configs.port)
+    else:
+        app.listen(configs.port)
     try:
         ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
