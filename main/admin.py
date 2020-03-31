@@ -1,6 +1,10 @@
 from django.contrib import admin
 from .models import BlackList, AttackType, Events, Configs
 
+from django.contrib.auth.models import Group
+
+admin.site.unregister(Group)
+
 
 def gen_url(port=False, https=False):
     if not port and not https:
