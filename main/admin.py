@@ -69,9 +69,10 @@ class ConfigsAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         admin.site.site_url = gen_url(obj.port, obj.https)
-        cmd = "sudo systemctl restart simple-waf.service"
-        obj.daemon_status = os.system(cmd)
-        #  TODO здесь будет рестарт сервиса waf
+        cmd_restart = "sudo systemctl restart simple-waf.service"
+        cmd_status = "systemctl status simple-waf | grep active"
+        os.system(cmd_restart)
+        obj.daemon_status = os.system(cmd_status)
         super().save_model(request, obj, form, change)
 
 # admin.site.register(AttackType)
