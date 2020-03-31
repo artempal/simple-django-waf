@@ -8,7 +8,10 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('hostname', type=str)
         parser.add_argument('port', type=int)
-        parser.add_argument('https', type=bool)
+        parser.add_argument("https",
+                            default=False,
+                            nargs="?",
+                            help="Activate https")
 
     def handle(self, *args, **options):
         if options['hostname'] and options['port'] and options['https'] is not None:
