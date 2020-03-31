@@ -1,9 +1,26 @@
 from django.contrib import admin
 from .models import BlackList, AttackType, Events, Configs
 
+
+def gen_url(port=False, https=False):
+    if not port and not https:
+        configs = Configs.objects.get(pk=1)
+        port = configs.port
+        https = configs.https
+
+    if https:
+        site_url = "https://"
+    else:
+        site_url = "http://"
+    site_url += "localhost"
+    if port != 80:
+        site_url += ":" + str(port)
+    return site_url
+
+
 admin.site.site_header = "Artem WAF "
 admin.site.site_title = "Artem WAF"
-admin.site.site_url = 'http://localhost:9999/'
+admin.site.site_url = gen_url()
 admin.site.index_title = 'Администрирование WAF'
 
 
@@ -41,8 +58,8 @@ class ConfigsAdmin(admin.ModelAdmin):
         return False
 
     def save_model(self, request, obj, form, change):
+        admin.site.site_url = gen_url(obj.port, obj.https)
         #  TODO здесь будет рестарт сервиса waf
         super().save_model(request, obj, form, change)
 
-
-#admin.site.register(AttackType)
+# admin.site.register(AttackType)
