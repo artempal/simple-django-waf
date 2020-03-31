@@ -67,6 +67,7 @@ class Configs(models.Model):
     content_security_policy_self = models.BooleanField('строгая политика CSP', default=False)
     hide_server = models.BooleanField('скрытие сервера', default=True)
     hide_x_powered_by = models.BooleanField('скрытие ПО сервера', default=True)
+    daemon_status = models.CharField('Статус сервиса', default='Неизвестно',max_length=255)
 
     class Meta:
         verbose_name = 'настройка'

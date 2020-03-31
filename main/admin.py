@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import BlackList, AttackType, Events, Configs
+import os
 
 from django.contrib.auth.models import Group
 
@@ -58,6 +59,8 @@ class EventsAdmin(admin.ModelAdmin):
 
 @admin.register(Configs)
 class ConfigsAdmin(admin.ModelAdmin):
+    readonly_fields = ('daemon_status',)
+
     def has_add_permission(self, request):
         return False
 
@@ -66,6 +69,8 @@ class ConfigsAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         admin.site.site_url = gen_url(obj.port, obj.https)
+        cmd = "sudo systemctl restart simple-waf.service"
+        obj.daemon_status = os.system(cmd)
         #  TODO здесь будет рестарт сервиса waf
         super().save_model(request, obj, form, change)
 
