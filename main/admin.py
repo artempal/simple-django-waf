@@ -8,7 +8,10 @@ admin.site.unregister(Group)
 
 def gen_url(port=False, https=False):
     if not port and not https:
-        configs = Configs.objects.get(pk=1)
+        try:
+            configs = Configs.objects.get(pk=1)
+        except Exception:
+            return "http://localhost"
         port = configs.port
         https = configs.https
 
