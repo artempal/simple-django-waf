@@ -40,5 +40,9 @@ class ConfigsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def save_model(self, request, obj, form, change):
+        #  TODO здесь будет рестарт сервиса waf
+        super().save_model(request, obj, form, change)
+
 
 #admin.site.register(AttackType)
