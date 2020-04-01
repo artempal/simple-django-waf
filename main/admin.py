@@ -60,6 +60,7 @@ class EventsAdmin(admin.ModelAdmin):
 @admin.register(Configs)
 class ConfigsAdmin(admin.ModelAdmin):
     readonly_fields = ('daemon_status',)
+    list_display = ('hostname', 'daemon_status',)
 
     def has_add_permission(self, request):
         return False
@@ -70,7 +71,7 @@ class ConfigsAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         admin.site.site_url = gen_url(obj.port, obj.https)
         proc_restart = subprocess.Popen(['systemctl', 'restart', 'simple-waf.service'])
-        proc_status = subprocess.Popen(['systemctl status simple-waf.service | grep active'], stdout=subprocess.PIPE,
+        proc_status = subprocess.Popen(['systemctl status simple-waf | grep active | cut -d";" -f1'], stdout=subprocess.PIPE,
                                        shell=True)
         obj.daemon_status = proc_status.communicate()[0].decode("utf-8")
         super().save_model(request, obj, form, change)
