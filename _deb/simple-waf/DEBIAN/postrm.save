@@ -1,0 +1,6 @@
+#!/bin/bash
+rm -rf /opt/simple-waf
+rm -rf //simple-waf.service
+rm -rf /etc/systemd/system/simple-waf-admin.service
+systemctl daemon-reload
+

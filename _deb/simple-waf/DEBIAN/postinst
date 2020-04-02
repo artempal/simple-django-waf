@@ -1,0 +1,41 @@
+#!/bin/bash
+. /usr/share/debconf/confmodule
+
+db_input critical "simple-waf/hostname" || true # инициализация
+db_go || true # вывод запроса на экран
+
+# Обработка ответа
+db_get "simple-waf/hostname" # Получение значения в переменную $RET
+hostname="$RET"
+
+db_input critical "simple-waf/port" || true
+db_go || true
+db_get "simple-waf/port"
+port="$RET"
+
+db_input critical "simple-waf/pass" || true
+db_go || true
+db_get "simple-waf/pass"
+pass="$RET"
+
+db_input critical "simple-waf/https" || true
+db_go || true
+db_get "simple-waf/https"
+https="$RET"
+
+cd /opt/simple-waf/
+#python3 -m venv env
+source /opt/simple-waf/env/bin/activate
+#pip3 install -r requirements.txt
+/opt/simple-waf/env/bin/python3 manage.py migrate
+/opt/simple-waf/env/bin/python3 import.py
+if [ "$https" = "true" ]; then
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /opt/simple-waf/certs/mydomain.key -out /opt/simple-waf/certs/mydomain.crt -subj '/CN=localhost'
+    https_param=True
+fi
+/opt/simple-waf/env/bin/python3 manage.py configuration $hostname $port $https_param
+echo "from django.contrib.auth.models import User; User.objects.create_superuser('root', 'root@example.com', '$pass')" | /opt/simple-waf/env/bin/python3 manage.py shell
+systemctl daemon-reload
+systemctl start simple-waf-admin
+systemctl start simple-waf
+

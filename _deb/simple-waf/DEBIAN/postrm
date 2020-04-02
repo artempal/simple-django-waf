@@ -1,0 +1,7 @@
+#!/bin/bash
+rm -rf /opt/simple-waf
+rm -rf /lib/systemd/system/simple-waf.service
+rm -rf /lib/systemd/system/simple-waf-admin.service
+systemctl daemon-reload
+
+echo PURGE | debconf-communicate simple-waf > /dev/null

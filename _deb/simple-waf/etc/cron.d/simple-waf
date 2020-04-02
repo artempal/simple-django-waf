@@ -1,0 +1,1 @@
+*/5 * * * * root /opt/simple-waf/env/bin/python3 /opt/simple-waf/manage.py check_status > /dev/null 2>&1

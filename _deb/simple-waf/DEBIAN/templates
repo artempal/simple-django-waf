@@ -1,0 +1,21 @@
+Template: simple-waf/hostname
+Type: string
+Default: 127.0.0.1:80
+Description: Site hostname and port
+ Input hostname or IP, please
+
+Template: simple-waf/port
+Type: string
+Default: 80
+Description: Waf listen port
+ Input port for WAF, please
+
+Template: simple-waf/pass
+Type: password
+Description: root user password
+ Input root password for waf-admin http://localhost:8000
+
+Template: simple-waf/https
+Type: boolean
+Description: Generate self-signed certs 
+ Enable https

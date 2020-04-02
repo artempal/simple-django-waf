@@ -1,0 +1,5 @@
+#!/bin/bash
+systemctl stop simple-waf
+systemctl stop simple-waf-admin
+systemctl disable simple-waf
+systemctl disable simple-waf-admin
