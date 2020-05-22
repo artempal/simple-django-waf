@@ -1,0 +1,10 @@
+[Unit]
+Description=Simple-Waf-Admin
+
+[Service]
+ExecStart=/opt/simple-waf/env/bin/python /opt/simple-waf/manage.py runserver
+User=root
+Group=root
+[Install]
+WantedBy=multi-user.target
+
