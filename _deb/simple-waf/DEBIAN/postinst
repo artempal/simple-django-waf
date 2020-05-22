@@ -30,6 +30,7 @@ source /opt/simple-waf/env/bin/activate
 /opt/simple-waf/env/bin/python3 manage.py migrate
 /opt/simple-waf/env/bin/python3 import.py
 if [ "$https" = "true" ]; then
+	mkdir -p /opt/simple-waf/certs/
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /opt/simple-waf/certs/mydomain.key -out /opt/simple-waf/certs/mydomain.crt -subj '/CN=localhost'
     https_param=True
 fi
