@@ -2,7 +2,7 @@
 Description=Simple-Waf-Admin
 
 [Service]
-ExecStart=/opt/simple-waf/env/bin/python /opt/simple-waf/manage.py runserver
+ExecStart=/opt/simple-waf/env/bin/python /opt/simple-waf/manage.py runserver 0:8000
 User=root
 Group=root
 [Install]

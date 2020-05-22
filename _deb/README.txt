@@ -9,7 +9,7 @@ python3 -m venv env
 source env/bin/activate
 pip3 install -r requirements.txt
 cd ..
-mkdir simple-waf/opt/simple-waf
+mkdir -p simple-waf/opt/simple-waf
 mv simple-django-waf/* simple-waf/opt/simple-waf
 chmod 755 simple-waf/DEBIAN/postinst
 chmod 755 simple-waf/DEBIAN/prerm
