@@ -1,0 +1,39 @@
+version: '3.7'
+services:
+  web:
+    image: waf:latest
+    entrypoint: /usr/src/app/entrypoint-waf.sh
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - certs:/usr/src/app/certs
+    ports:
+      - 8000:8000
+    env_file:
+      - .env.dev
+    depends_on:
+      - db
+  proxy:
+    image: waf:latest
+    command: python waf.py
+    volumes:
+      - certs:/usr/src/app/certs
+    ports:
+      - 80:80
+    env_file:
+      - .env.dev
+    restart: always
+    depends_on:
+      - db
+      - web
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=waf
+      - POSTGRES_PASSWORD=simple-waf
+      - POSTGRES_DB=simple-waf
+    ports:
+      - 5432:5432
+volumes:
+  postgres_data:

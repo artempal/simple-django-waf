@@ -15,7 +15,7 @@ class AttackType(models.Model):
 
 
 class BlackList(models.Model):
-    reg = models.CharField('Регулярное выражение', max_length=200)
+    reg = models.TextField('Регулярное выражение', max_length=500)
     head = models.BooleanField(default=False)
     url = models.BooleanField(default=False)
     args = models.BooleanField(default=False)
@@ -57,8 +57,8 @@ class Configs(models.Model):
     hostname = models.CharField(max_length=255, default="127.0.0.1:81")
     port = models.IntegerField('порт', default=80)
     https = models.BooleanField('HTTPS', default=False)
-    cert_file = models.CharField('Файл сертификата', default="/opt/simple-waf/certs/mydomain.crt", max_length=255)
-    key_file = models.CharField('Ключ сертификата', default="/opt/simple-waf/certs/mydomain.key", max_length=255)
+    cert_file = models.CharField('Файл сертификата', default="certs/mydomain.crt", max_length=255)
+    key_file = models.CharField('Ключ сертификата', default="certs/mydomain.key", max_length=255)
     strict_transport_security = models.BooleanField('добавить заголовок Strict-Transport-Security', default=False)
     x_frame_option = models.BooleanField('запрет встраивания в фреймы', default=True)
     signature_analysis = models.BooleanField('сигнатурный анализ', default=True)

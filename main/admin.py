@@ -70,10 +70,7 @@ class ConfigsAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         admin.site.site_url = gen_url(obj.port, obj.https)
-        proc_restart = subprocess.Popen(['systemctl', 'restart', 'simple-waf.service'])
-        proc_status = subprocess.Popen(['systemctl status simple-waf | grep active | cut -d";" -f1'], stdout=subprocess.PIPE,
-                                       shell=True)
-        obj.daemon_status = proc_status.communicate()[0].decode("utf-8")
+        obj.daemon_status = 'Неизвестно'
         super().save_model(request, obj, form, change)
 
 # admin.site.register(AttackType)
