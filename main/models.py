@@ -75,3 +75,17 @@ class Configs(models.Model):
 
     def __str__(self):
         return self.hostname
+
+
+class Proxy(models.Model):
+    hostname = models.CharField(max_length=255, default='127.0.0.1')
+    port = models.IntegerField('порт', default=80)
+    create_at = models.DateTimeField('дата добавления', auto_now_add=True)
+    update_at = models.DateTimeField('дата последнего подключения', auto_now=True)
+
+    class Meta:
+        verbose_name = 'прокси'
+        verbose_name_plural = 'Прокси'
+
+    def __str__(self):
+        return self.hostname

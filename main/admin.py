@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BlackList, AttackType, Events, Configs
+from .models import BlackList, AttackType, Events, Configs, Proxy
 import subprocess
 
 from django.contrib.auth.models import Group
@@ -71,6 +71,17 @@ class ConfigsAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         admin.site.site_url = gen_url(obj.port, obj.https)
         obj.daemon_status = 'Неизвестно'
+        #TODO рассылка всем прокси информации о необходимом перезапуске
         super().save_model(request, obj, form, change)
 
-# admin.site.register(AttackType)
+
+@admin.register(Proxy)
+class ProxyAdmin(admin.ModelAdmin):
+    icon_name = 'exit_to_app'
+    readonly_fields = ('hostname', 'port')
+    list_display = ('hostname', 'port', 'update_at',)
+
+    def has_add_permission(self, request):
+        return False
+
+    # admin.site.register(AttackType)

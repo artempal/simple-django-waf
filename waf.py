@@ -10,6 +10,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waf.settings')
 django.setup()
 from analysis import Analysis
 from main.models import Configs
+from main.models import Proxy
 
 ignore_headers = ('Content-Length', 'Transfer-Encoding', 'Content-Encoding', 'Connection', 'Pragma')
 configs = Configs.objects.get(pk=1)
@@ -105,6 +106,13 @@ if __name__ == "__main__":
         server.listen(configs.port)
     else:
         app.listen(configs.port)
+    try:
+        Proxy.objects.update_or_create(
+            hostname=os.environ.get("HOSTNAME_PROXY"),
+            port=os.environ.get("PROXY_PORT"),
+        )
+    except Exception:
+        exit(1)
     try:
         ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
