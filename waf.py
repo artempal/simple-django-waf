@@ -1,4 +1,5 @@
 import os
+import signal
 import ssl
 
 import django
@@ -15,6 +16,17 @@ from main.models import Proxy
 ignore_headers = ('Content-Length', 'Transfer-Encoding', 'Content-Encoding', 'Connection', 'Pragma')
 configs = Configs.objects.get(pk=1)
 
+
+def handler_sigterm(signum, frame):
+    try:
+        Proxy.objects.filter(hostname=os.environ.get("HOSTNAME_PROXY")).delete()
+    except Exception:
+        pass
+
+
+signal.signal(signal.SIGTERM, handler_sigterm)
+
+
 class MainHandler(web.RequestHandler):
     SUPPORTED_METHODS = ('GET', 'HEAD', 'POST')
     analysis = Analysis()
@@ -26,6 +38,9 @@ class MainHandler(web.RequestHandler):
     head = get
 
     def post(self):
+        if self.request.path == '/restart' and 'key' in self.request.arguments and \
+                self.request.arguments['key'][0].decode('utf-8') == os.environ.get("SECRET_KEY"):
+            exit(1)
         print('POST')
         self._go('POST')
 
@@ -115,5 +130,5 @@ if __name__ == "__main__":
         exit(1)
     try:
         ioloop.IOLoop.current().start()
-    except KeyboardInterrupt:
-        print('OK!')
+    except Exception:
+        exit(1)

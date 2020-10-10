@@ -1,8 +1,9 @@
 from django.contrib import admin
 from .models import BlackList, AttackType, Events, Configs, Proxy
-import subprocess
 
+import requests
 from django.contrib.auth.models import Group
+from django.conf import settings
 
 admin.site.unregister(Group)
 
@@ -59,8 +60,7 @@ class EventsAdmin(admin.ModelAdmin):
 
 @admin.register(Configs)
 class ConfigsAdmin(admin.ModelAdmin):
-    readonly_fields = ('daemon_status',)
-    list_display = ('hostname', 'daemon_status',)
+    list_display = ('hostname',)
 
     def has_add_permission(self, request):
         return False
@@ -70,8 +70,12 @@ class ConfigsAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         admin.site.site_url = gen_url(obj.port, obj.https)
-        obj.daemon_status = 'Неизвестно'
-        #TODO рассылка всем прокси информации о необходимом перезапуске
+        all_proxy = Proxy.objects.all().values_list('hostname', flat=True)
+        for proxy in all_proxy:
+            try:
+                requests.post('http://{}/{}'.format(proxy, 'restart'), data={'key': settings.SECRET_KEY})
+            except Exception:
+                pass
         super().save_model(request, obj, form, change)
 
 
@@ -83,5 +87,4 @@ class ProxyAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
-
     # admin.site.register(AttackType)
