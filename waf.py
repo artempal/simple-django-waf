@@ -13,7 +13,7 @@ from analysis import Analysis
 from main.models import Configs
 from main.models import Proxy
 
-ignore_headers = ('Content-Length', 'Transfer-Encoding', 'Content-Encoding', 'Connection', 'Pragma')
+ignore_headers = ('Content-Length', 'Transfer-Encoding', 'Content-Encoding', 'Connection', 'Pragma', 'Referer')
 configs = Configs.objects.get(pk=1)
 
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         app.listen(configs.port)
     try:
         Proxy.objects.update_or_create(
-            hostname=os.environ.get("HOSTNAME_PROXY"),
+            hostname=os.environ.get("PROXY_HOST"),
             port=os.environ.get("PROXY_PORT"),
         )
     except Exception:

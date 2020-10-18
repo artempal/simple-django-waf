@@ -25,6 +25,15 @@ services:
     depends_on:
       - db
       - web
+      - redis
+  redis:
+    image: redis:alpine
+    command: redis-server --requirepass password
+    ports:
+      - "6379:6379"
+    restart: always
+    env_file:
+      - .env.dev
   db:
     image: postgres:12.0-alpine
     volumes:

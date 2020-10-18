@@ -2,8 +2,42 @@ import os
 from main.models import BlackList, Events
 from block_ext import BlockExtension  # класс исключения
 import helpers
+from functools import wraps
+from time import time
+import sys
+import hashlib
+import redis
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+enable_head_hash = False
+if enable_head_hash:
+    r = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=0)
+    r.flushdb()  # очишаем хэши при запуске
+
+def measure(func):
+    @wraps(func)
+    def _time_it(*args, **kwargs):
+        start = int(round(time() * 1000))
+        try:
+            return func(*args, **kwargs)
+        finally:
+            end_ = int(round(time() * 1000)) - start
+            print(f"Total execution time: {end_ if end_ > 0 else 0} ms")
+
+    return _time_it
+
+
+def generate_hash(text):
+    sha = hashlib.sha1(text.encode('utf-8')).hexdigest()
+    return sha
+
+
+def check_hash(sha):
+    return r.exists(sha)
+
+
+def store_hash(sha):
+    r.incr(sha)
 
 
 class Analysis:
@@ -57,15 +91,22 @@ class Analysis:
         :param location: локализация сигнатуры
         :return: вернет 0, если ничего не найдено иначе выбросит исключение BlockExtension со строкой сигнатуры
         """
+        if location == 'head' and enable_head_hash:
+            if check_hash(self.text['head_hash']):  # если данный хэш уже содержится в базе, пропускаем проверки
+                store_hash(self.text['head_hash'])  # увиличиваем счетчик попаданий в хэш
+                return 0
         try:
             helpers.stable_search(self.get_blacklist(True, location), self.text[location])
             helpers.reg_search(self.get_blacklist(False, location), self.text[location])
+            if location == 'head' and enable_head_hash:
+                store_hash(self.text['head_hash'])  # если проверки успешны, то записываем хэш в Redis
         except BlockExtension as reg:
             self.insert_event(reg, location)
             print(reg)
             raise BlockExtension(reg)
         return 0
 
+    @measure
     def process(self, req):
         """
         процесс анализа, запускаемый основной программой waf.py
@@ -75,8 +116,11 @@ class Analysis:
         self.request = req
         self.text['args'] = helpers.args_to_text(self.request.arguments)
         self.text['head'] = helpers.headers_to_text(self.request.headers)
+        if enable_head_hash:
+            self.text['head_hash'] = generate_hash(self.text['head'])
         self.text['url'] = self.request.path
         self.text['body'] = str(self.request.body, 'utf-8')
+
         '''
         print(self.request.path)
         print(self.request.headers)
@@ -85,6 +129,7 @@ class Analysis:
         print(self.request.body)
         print(self.request.query)
         '''
+        print(self.text['head'])
         try:  # проверяем по порядку и ждем выброса исключения на любом этапе проверки
             self.check('url')
             self.check('args')

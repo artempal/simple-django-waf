@@ -48,6 +48,8 @@ def headers_to_text(headers):
     """
     text = ""
     for header in headers:
+        if header == 'Referer':
+            continue
         text += header + ": " + headers[header] + "; "
     return text
 
