@@ -19,7 +19,7 @@ configs = Configs.objects.get(pk=1)
 
 def handler_sigterm(signum, frame):
     try:
-        Proxy.objects.filter(hostname=os.environ.get("HOSTNAME_PROXY")).delete()
+        Proxy.objects.filter(hostname=os.environ.get("PROXY_HOST")).delete()
     except Exception:
         pass
 
