@@ -9,12 +9,15 @@ from tornado.httpserver import HTTPServer
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waf.settings')
 django.setup()
+
 from analysis import Analysis
 from main.models import Configs
 from main.models import Proxy
+from asgiref.sync import sync_to_async
 
 ignore_headers = ('Content-Length', 'Transfer-Encoding', 'Content-Encoding', 'Connection', 'Pragma', 'Referer')
 configs = Configs.objects.get(pk=1)
+analysis = Analysis()
 
 
 def handler_sigterm(signum, frame):
@@ -29,26 +32,27 @@ signal.signal(signal.SIGTERM, handler_sigterm)
 
 class MainHandler(web.RequestHandler):
     SUPPORTED_METHODS = ('GET', 'HEAD', 'POST')
-    analysis = Analysis()
 
-    def get(self):
+    async def get(self):
         print('GET')
-        self._go('GET')
+        await self._go('GET')
 
     head = get
 
-    def post(self):
+    async def post(self):
         if self.request.path == '/restart' and 'key' in self.request.arguments and \
                 self.request.arguments['key'][0].decode('utf-8') == os.environ.get("SECRET_KEY"):
             exit(1)
         print('POST')
-        self._go('POST')
+        await self._go('POST')
 
-    def _go(self, type):
-
-        if configs.signature_analysis and self.analysis.process(self.request):  # если запрос должен быть заблокирован
-            self.set_status(403)  # ставим код ошибки
-            return  # выходим
+    async def _go(self, type):
+        async_function = sync_to_async(analysis.process)
+        if configs.signature_analysis:  # если запрос должен быть заблокирован
+            result = await async_function(self.request)
+            if result:
+                self.set_status(403)  # ставим код ошибки
+                return  # выходим
 
         if type == 'POST':
             url = 'http://{}{}'.format(configs.hostname, self.request.path)
@@ -94,7 +98,7 @@ class MainHandler(web.RequestHandler):
         for cookie in cookies:
             self.set_cookie(cookie, cookies[cookie])
         self.write(response.content)
-        self.finish()
+        await self.finish()
 
 
 def parse_headers(headers):

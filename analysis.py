@@ -8,11 +8,11 @@ import sys
 import hashlib
 import redis
 
-os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 enable_head_hash = False
 if enable_head_hash:
     r = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=0)
     r.flushdb()  # очишаем хэши при запуске
+
 
 def measure(func):
     @wraps(func)
@@ -43,27 +43,20 @@ def store_hash(sha):
 class Analysis:
     request = object  # запрос
     text = {}  # пребразованные в текст данные из запроса
+    blacklist_cache_stable = {}
+    blacklist_cache_reg = {}
 
     def __init__(self):
         self.blacklist = BlackList.objects.values_list('reg', flat=True).filter(active=True)  # получаем блэклист
 
-    def get_blacklist(self, stable, location):
-        """
-        получение блэклиста
-        :param location: местонахождение данного выражения
-        :param stable: это просто поиск подстроки (True) или регулярное выражение (False)
-        :return:
-        """
-        if location == 'url':
-            return self.blacklist.filter(url=True, stable=stable)
-        elif location == 'head':
-            return self.blacklist.filter(head=True, stable=stable)
-        elif location == 'args':
-            return self.blacklist.filter(args=True, stable=stable)
-        elif location == 'body':
-            return self.blacklist.filter(body=True, stable=stable)
-        else:
-            return self.blacklist
+        self.blacklist_cache_stable['url'] = self.blacklist.filter(url=True, stable=True)
+        self.blacklist_cache_reg['url'] = self.blacklist.filter(url=True, stable=False)
+        self.blacklist_cache_stable['head'] = self.blacklist.filter(head=True, stable=True)
+        self.blacklist_cache_reg['head'] = self.blacklist.filter(head=True, stable=False)
+        self.blacklist_cache_stable['args'] = self.blacklist.filter(args=True, stable=True)
+        self.blacklist_cache_reg['args'] = self.blacklist.filter(args=True, stable=False)
+        self.blacklist_cache_stable['body'] = self.blacklist.filter(body=True, stable=True)
+        self.blacklist_cache_reg['body'] = self.blacklist.filter(body=True, stable=False)
 
     def insert_event(self, reg, location):
         """
@@ -78,8 +71,9 @@ class Analysis:
         event.head = self.text['head']
         event.method = self.request.method
         event.body = self.text['body']
-        event.ip = self.request.remote_ip
-        event.type = BlackList.objects.get(reg=reg).type
+        event.ip = self.request.headers.get("X-Real-IP") or \
+                   self.request.headers.get("X-Forwarded-For") or \
+                   self.request.remote_ip
         event.cookie = self.request.cookies
         event.location = location
         event.reg = reg
@@ -96,8 +90,8 @@ class Analysis:
                 store_hash(self.text['head_hash'])  # увиличиваем счетчик попаданий в хэш
                 return 0
         try:
-            helpers.stable_search(self.get_blacklist(True, location), self.text[location])
-            helpers.reg_search(self.get_blacklist(False, location), self.text[location])
+            helpers.stable_search(self.blacklist_cache_stable[location], self.text[location])
+            helpers.reg_search(self.blacklist_cache_reg[location], self.text[location])
             if location == 'head' and enable_head_hash:
                 store_hash(self.text['head_hash'])  # если проверки успешны, то записываем хэш в Redis
         except BlockExtension as reg:
@@ -106,7 +100,6 @@ class Analysis:
             raise BlockExtension(reg)
         return 0
 
-    @measure
     def process(self, req):
         """
         процесс анализа, запускаемый основной программой waf.py
@@ -120,7 +113,6 @@ class Analysis:
             self.text['head_hash'] = generate_hash(self.text['head'])
         self.text['url'] = self.request.path
         self.text['body'] = str(self.request.body, 'utf-8')
-
         '''
         print(self.request.path)
         print(self.request.headers)
@@ -128,8 +120,8 @@ class Analysis:
         print(self.request.arguments)
         print(self.request.body)
         print(self.request.query)
-        '''
         print(self.text['head'])
+        '''
         try:  # проверяем по порядку и ждем выброса исключения на любом этапе проверки
             self.check('url')
             self.check('args')

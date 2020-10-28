@@ -34,7 +34,6 @@ class BlackList(models.Model):
 
 class Events(models.Model):
     date = models.DateTimeField('Дата', auto_now=True)
-    type = models.ForeignKey(AttackType, on_delete=models.CASCADE)
     reg = models.CharField(max_length=255)
     location = models.CharField(max_length=25)
     url = models.CharField(max_length=255)

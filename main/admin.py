@@ -45,7 +45,7 @@ class BlackListAdmin(admin.ModelAdmin):
 
 @admin.register(Events)
 class EventsAdmin(admin.ModelAdmin):
-    list_display = ('url', 'method', 'reg', 'location', 'type', 'ip', 'date')
+    list_display = ('url', 'method', 'reg', 'location', 'ip', 'date')
     icon_name = 'error'
 
     def has_add_permission(self, request):
