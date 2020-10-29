@@ -1,5 +1,5 @@
 import os
-from main.models import BlackList, Events
+from main.models import BlackList, Events, Configs
 from block_ext import BlockExtension  # класс исключения
 import helpers
 from functools import wraps
@@ -8,16 +8,15 @@ import sys
 import hashlib
 import redis
 
-enable_head_hash = int(os.environ.get("ENABLE_HEADER_HASH", default=False))
-if enable_head_hash:
+configs = Configs.objects.get(pk=1)
+
+if configs.head_hash:
     r = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=0)
     r.flushdb()  # очишаем хэши при запуске
 
-enable_ban = int(os.environ.get("ENABLE_BAN", default=False))
-ban_time = int(os.environ.get("BAN_TIME", default=5))
-
-if enable_ban == 1:
+if configs.ban_enable:
     r_ban = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=1)
+
 
 def measure(func):
     @wraps(func)
@@ -46,7 +45,7 @@ def store_hash(sha):
 
 
 def add_ip_to_ban(ip):
-    r_ban.set(ip, "1", ban_time)
+    r_ban.set(ip, "1", configs.ban_time)
 
 
 def check_ip_in_ban(ip):
@@ -98,17 +97,17 @@ class Analysis:
         :param location: локализация сигнатуры
         :return: вернет 0, если ничего не найдено иначе выбросит исключение BlockExtension со строкой сигнатуры
         """
-        if location == 'head' and enable_head_hash:
+        if location == 'head' and configs.head_hash:
             if check_hash(self.text['head_hash']):  # если данный хэш уже содержится в базе, пропускаем проверки
                 # store_hash(self.text['head_hash'])  # увиличиваем счетчик попаданий в хэш
                 return 0
         try:
             helpers.stable_search(self.blacklist_cache_stable[location], self.text[location])
             helpers.reg_search(self.blacklist_cache_reg[location], self.text[location])
-            if location == 'head' and enable_head_hash:
+            if location == 'head' and configs.head_hash:
                 store_hash(self.text['head_hash'])  # если проверки успешны, то записываем хэш в Redis
         except BlockExtension as reg:
-            if enable_ban == 1:
+            if configs.ban_enable:
                 add_ip_to_ban(self.src_ip)
             self.insert_event(reg, location)
             print(reg)
@@ -123,13 +122,13 @@ class Analysis:
         """
         self.request = req
         self.src_ip = self.request.headers.get("X-Real-IP") or \
-             self.request.headers.get("X-Forwarded-For") or \
-             self.request.remote_ip
-        if enable_ban == 1 and check_ip_in_ban(self.src_ip):
+                      self.request.headers.get("X-Forwarded-For") or \
+                      self.request.remote_ip
+        if configs.ban_enable and check_ip_in_ban(self.src_ip):
             return True
         self.text['args'] = helpers.args_to_text(self.request.arguments)
         self.text['head'] = helpers.headers_to_text(self.request.headers)
-        if enable_head_hash:
+        if configs.head_hash:
             self.text['head_hash'] = generate_hash(self.text['head'])
         self.text['url'] = self.request.path
         self.text['body'] = str(self.request.body, 'utf-8')
