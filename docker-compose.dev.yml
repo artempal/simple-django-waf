@@ -34,6 +34,16 @@ services:
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
       - ./cert:/etc/ssl/certs/
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    user: "1000"
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources/
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards/
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel,redis-datasource
   redis:
     image: redis:alpine
     command: redis-server --requirepass password
