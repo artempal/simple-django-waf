@@ -8,11 +8,16 @@ import sys
 import hashlib
 import redis
 
-enable_head_hash = False
+enable_head_hash = int(os.environ.get("ENABLE_HEADER_HASH", default=False))
 if enable_head_hash:
     r = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=0)
     r.flushdb()  # очишаем хэши при запуске
 
+enable_ban = int(os.environ.get("ENABLE_BAN", default=False))
+ban_time = int(os.environ.get("BAN_TIME", default=5))
+
+if enable_ban == 1:
+    r_ban = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=1)
 
 def measure(func):
     @wraps(func)
@@ -40,11 +45,21 @@ def store_hash(sha):
     r.incr(sha)
 
 
+def add_ip_to_ban(ip):
+    r_ban.set(ip, "1", ban_time)
+
+
+def check_ip_in_ban(ip):
+    return r_ban.exists(ip)
+
+
 class Analysis:
     request = object  # запрос
     text = {}  # пребразованные в текст данные из запроса
     blacklist_cache_stable = {}
     blacklist_cache_reg = {}
+
+    src_ip = object
 
     def __init__(self):
         self.blacklist = BlackList.objects.values_list('reg', flat=True).filter(active=True)  # получаем блэклист
@@ -71,9 +86,7 @@ class Analysis:
         event.head = self.text['head']
         event.method = self.request.method
         event.body = self.text['body']
-        event.ip = self.request.headers.get("X-Real-IP") or \
-                   self.request.headers.get("X-Forwarded-For") or \
-                   self.request.remote_ip
+        event.ip = self.src_ip
         event.cookie = self.request.cookies
         event.location = location
         event.reg = reg
@@ -87,7 +100,7 @@ class Analysis:
         """
         if location == 'head' and enable_head_hash:
             if check_hash(self.text['head_hash']):  # если данный хэш уже содержится в базе, пропускаем проверки
-                store_hash(self.text['head_hash'])  # увиличиваем счетчик попаданий в хэш
+                # store_hash(self.text['head_hash'])  # увиличиваем счетчик попаданий в хэш
                 return 0
         try:
             helpers.stable_search(self.blacklist_cache_stable[location], self.text[location])
@@ -95,6 +108,8 @@ class Analysis:
             if location == 'head' and enable_head_hash:
                 store_hash(self.text['head_hash'])  # если проверки успешны, то записываем хэш в Redis
         except BlockExtension as reg:
+            if enable_ban == 1:
+                add_ip_to_ban(self.src_ip)
             self.insert_event(reg, location)
             print(reg)
             raise BlockExtension(reg)
@@ -107,6 +122,11 @@ class Analysis:
         :return: True - если нужно заблокировать, False - если блокировать не нужно
         """
         self.request = req
+        self.src_ip = self.request.headers.get("X-Real-IP") or \
+             self.request.headers.get("X-Forwarded-For") or \
+             self.request.remote_ip
+        if enable_ban == 1 and check_ip_in_ban(self.src_ip):
+            return True
         self.text['args'] = helpers.args_to_text(self.request.arguments)
         self.text['head'] = helpers.headers_to_text(self.request.headers)
         if enable_head_hash:
