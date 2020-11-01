@@ -53,11 +53,14 @@ class MainHandler(web.RequestHandler):
             if result:
                 self.set_status(403)  # ставим код ошибки
                 return  # выходим
-
-        if type == 'POST':
-            url = 'http://{}{}'.format(configs.hostname, self.request.path)
+        if configs.hostname.startswith('http'):
+            protocol = ''
         else:
-            url = 'http://{}{}?{}'.format(configs.hostname, self.request.path, self.request.query)
+            protocol = 'http://'
+        if type == 'POST':
+            url = protocol+'{}/{}'.format(configs.hostname, self.request.path)
+        else:
+            url = protocol+'{}/{}?{}'.format(configs.hostname, self.request.path, self.request.query)
         print(url)
         m_headers = parse_headers(self.request.headers)
         try:
