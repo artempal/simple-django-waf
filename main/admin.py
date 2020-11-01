@@ -73,9 +73,15 @@ class ConfigsAdmin(admin.ModelAdmin):
         all_proxy = Proxy.objects.all().values_list('hostname', flat=True)
         for proxy in all_proxy:
             try:
-                requests.post('http://{}/{}'.format(proxy, 'restart'), data={'key': settings.SECRET_KEY})
-            except Exception:
-                pass
+                configs = Configs.objects.get(pk=1)
+                if configs.https:
+                    requests.post('https://{}:{}/{}'.format(proxy, configs.port, 'restart'),
+                                  data={'key': settings.SECRET_KEY}, verify=False)
+                else:
+                    requests.post('http://{}:{}/{}'.format(proxy, configs.port, 'restart'),
+                                  data={'key': settings.SECRET_KEY})
+            except Exception as e:
+                print(e)
         super().save_model(request, obj, form, change)
 
 

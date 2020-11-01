@@ -128,7 +128,7 @@ if __name__ == "__main__":
     try:
         Proxy.objects.update_or_create(
             hostname=os.environ.get("PROXY_HOST"),
-            port=os.environ.get("PROXY_PORT"),
+            defaults={'port': configs.port}
         )
     except Exception:
         exit(1)
