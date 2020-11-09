@@ -21,6 +21,7 @@ if [ "$HTTPS_ON_PROXY" = "True" ]; then
 fi
 
 python manage.py configuration $HOSTNAME_APP $PROXY_PORT $https_param
+python manage.py collectstatic --noinput
 
 echo "from django.contrib.auth.models import User; User.objects.create_superuser('root', 'root@example.com', '$DJANGO_ROOT_PASS')" | python manage.py shell
 

@@ -14,11 +14,11 @@ datasources:
     # <int> org id. will default to orgId 1 if not specified
     orgId: 1
     # <string> url
-    url: redis://192.168.77.75:6379/1
+    url: redis://$TEMPLATE_REDIS_HOST:6379/1
     # <string> json object of data that will be encrypted.
     secureJsonData:
       # <string> database password, if used
-      password: password
+      password: $TEMPLATE_REDIS_PASSWORD
     version: 1
     # <bool> allow users to edit datasources from the UI.
     editable: true

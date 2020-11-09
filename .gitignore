@@ -64,3 +64,7 @@ venv/
 ~$data.xlsx
 
 certs/
+/.env
+/docker-compose.yml
+/grafana/
+/haproxy.cfg

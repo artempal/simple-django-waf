@@ -11,11 +11,11 @@ import redis
 configs = Configs.objects.get(pk=1)
 
 if configs.head_hash:
-    r = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=0)
+    r = redis.Redis(host=os.environ.get("REDIS_HOST"), password=os.environ.get("REDIS_PASSWORD"), db=0)
     r.flushdb()  # очишаем хэши при запуске
 
 if configs.ban_enable:
-    r_ban = redis.Redis(host=os.environ.get("REDIS_HOST"), password='password', db=1)
+    r_ban = redis.Redis(host=os.environ.get("REDIS_HOST"), password=os.environ.get("REDIS_PASSWORD"), db=1)
 
 
 def measure(func):

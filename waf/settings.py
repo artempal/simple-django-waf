@@ -15,18 +15,16 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", default='4io4e+9gx431te_92ps5f2m9s!4y)!5-!sz*ekt^-g050t(^n+)')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = int(os.environ.get("DEBUG", default=0))
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
 
 # Application definition
 
@@ -72,7 +70,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'waf.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
@@ -105,7 +102,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
@@ -119,22 +115,21 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
 
 MATERIAL_ADMIN_SITE = {
-    #'FAVICON':  'path/to/favicon',  # Admin site favicon (path to static should be specified)
-    #'MAIN_BG_COLOR':  '#31f7d8',  # Admin site main color, css color should be specified
-    #'MAIN_HOVER_COLOR':  '#9291f5',  # Admin site main hover color, css color should be specified
-    #'PROFILE_PICTURE':  'path/to/image',  # Admin site profile picture (path to static should be specified)
-    #'PROFILE_BG':  'path/to/image',  # Admin site profile background (path to static should be specified)
-    #'LOGIN_LOGO':  'path/to/image',  # Admin site logo on login page (path to static should be specified)
-    #'LOGOUT_BG':  'path/to/image',  # Admin site background on login/logout pages (path to static should be specified)
-    'SHOW_THEMES':  True,  #  Show default admin themes button
+    # 'FAVICON':  'path/to/favicon',  # Admin site favicon (path to static should be specified)
+    # 'MAIN_BG_COLOR':  '#31f7d8',  # Admin site main color, css color should be specified
+    # 'MAIN_HOVER_COLOR':  '#9291f5',  # Admin site main hover color, css color should be specified
+    # 'PROFILE_PICTURE':  'path/to/image',  # Admin site profile picture (path to static should be specified)
+    # 'PROFILE_BG':  'path/to/image',  # Admin site profile background (path to static should be specified)
+    # 'LOGIN_LOGO':  'path/to/image',  # Admin site logo on login page (path to static should be specified)
+    # 'LOGOUT_BG':  'path/to/image',  # Admin site background on login/logout pages (path to static should be specified)
+    'SHOW_THEMES': True,  # Show default admin themes button
     'TRAY_REVERSE': True,  # Hide object-tools and additional-submit-line by default
     'NAVBAR_REVERSE': True,  # Hide side navbar by default
-    'SHOW_COUNTS': True, # Show instances counts for each model
+    'SHOW_COUNTS': True,  # Show instances counts for each model
 }
