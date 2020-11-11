@@ -100,6 +100,10 @@ case "$proxy_install" in
         read -p "Введите внешний IP прокси: " TEMPLATE_PROXY_HOST
         export TEMPLATE_PROXY_HOST
 
+        read -p "Введите порт работы прокси [444]: " TEMPLATE_PROXY_PORT
+        TEMPLATE_PROXY_PORT=${TEMPLATE_PROXY_PORT:-444}
+        export TEMPLATE_PROXY_PORT
+
         read -p "Введите адрес базы Redis [не использовать]: " TEMPLATE_REDIS_HOST
         TEMPLATE_REDIS_HOST=${TEMPLATE_REDIS_HOST:-None}
         export TEMPLATE_REDIS_HOST
